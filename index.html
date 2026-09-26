@@ -53,26 +53,18 @@ button{font:inherit}
     object-fit:cover;
     object-position:center;
     opacity:0;
-    transform:scale(1.015);
+    transform:none;
+    transition:opacity .48s ease-in-out;
+    z-index:1;
     filter:brightness(.92) contrast(1.04) saturate(.88);
-    transition:
-        opacity 2.2s cubic-bezier(.22,.61,.36,1),
-        transform 9s cubic-bezier(.16,.72,.19,1),
-        filter 2s ease;
     user-select:none;
     -webkit-user-drag:none;
-    will-change:opacity,transform;
 }
 
 .scene img.active{
     opacity:1;
-    transform:scale(1.075);
 }
 
-/* Extra cinematic slow push */
-.scene.slow-push img.active{
-    transform:scale(1.13);
-}
 
 /* Crossfade dark layer */
 .scene::after{
@@ -221,20 +213,18 @@ button{font:inherit}
     position:absolute;
     left:50%;
     bottom:11%;
-    transform:translateX(-50%) translateY(24px);
+    transform:translateX(-50%);
     width:min(900px,88%);
     z-index:70;
     text-align:center;
     opacity:0;
-    transition:
-        opacity 1.1s ease,
-        transform 1.1s cubic-bezier(.2,.7,.2,1);
+    transition:opacity 1.1s ease;
     pointer-events:none;
 }
 
 .story.show{
     opacity:1;
-    transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%);
 }
 
 .story p{
@@ -281,10 +271,8 @@ button{font:inherit}
     place-items:center;
     pointer-events:none;
     opacity:0;
-    transform:scale(.92);
-    transition:
-        opacity 1.8s ease,
-        transform 2.2s cubic-bezier(.16,.72,.19,1);
+    transform:scale(1);
+    transition:opacity 1.8s ease;
 }
 
 .chapter-title.show{
@@ -317,19 +305,19 @@ button{font:inherit}
     position:absolute;
     top:9%;
     left:50%;
-    transform:translateX(-50%) translateY(-8px);
+    transform:translateX(-50%);
     z-index:70;
     color:rgba(244,238,226,.6);
     font-size:10px;
     letter-spacing:4px;
     text-transform:uppercase;
     opacity:0;
-    transition:opacity 1.2s ease,transform 1.2s ease;
+    transition:opacity 1.2s ease;
 }
 
 .scene-label.show{
     opacity:1;
-    transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%);
 }
 
 /* =========================
@@ -340,18 +328,16 @@ button{font:inherit}
     position:absolute;
     left:50%;
     bottom:7%;
-    transform:translateX(-50%) translateY(20px);
+    transform:translateX(-50%);
     z-index:80;
     opacity:0;
     pointer-events:none;
-    transition:
-        opacity 1s ease,
-        transform 1s ease;
+    transition:opacity 1s ease;
 }
 
 .investigate.show{
     opacity:1;
-    transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%);
     pointer-events:auto;
 }
 
@@ -488,7 +474,8 @@ button{font:inherit}
     <div class="loading" id="loading">PREPARING THE NIGHT...</div>
 
     <div class="scene" id="scene">
-        <img id="sceneImage" src="01_ballroom.png" class="active" alt="">
+        <img id="sceneImageA" src="01_ballroom.png" class="active" alt="">
+        <img id="sceneImageB" src="01_ballroom.png" alt="">
     </div>
 
     <div class="vignette"></div>
@@ -553,7 +540,8 @@ const images = {
 
 const game = document.getElementById("game");
 const scene = document.getElementById("scene");
-const sceneImage = document.getElementById("sceneImage");
+const sceneImageA = document.getElementById("sceneImageA");
+const sceneImageB = document.getElementById("sceneImageB");
 const loading = document.getElementById("loading");
 const startScreen = document.getElementById("startScreen");
 const chapterTitle = document.getElementById("chapterTitle");
@@ -570,12 +558,12 @@ const replay = document.getElementById("replay");
 ========================================================= */
 
 const audio = {
-    music: new Audio("sounds/mystery_music.mp3"),
-    ambience: new Audio("sounds/ballroom_ambience.mp3"),
-    tick: new Audio("sounds/clock_tick.mp3"),
-    bell: new Audio("sounds/clock_bell.mp3"),
+    music: new Audio("soundssuspense.mp3"),
+    ambience: new Audio("sounds/suspense.mp3"),
+    tick: new Audio("sounds/clock-tick-tock.wav"),
+    bell: new Audio("sounds/bell.wav"),
     lights: new Audio("sounds/light_flicker.mp3"),
-    scream: new Audio("sounds/scream.mp3"),
+    scream: new Audio("soundsscream.mp3"),
     thud: new Audio("sounds/thud.mp3"),
     heartbeat: new Audio("sounds/heartbeat.mp3"),
     clue: new Audio("sounds/clue_reveal.mp3")
@@ -586,9 +574,9 @@ audio.ambience.loop = true;
 audio.tick.loop = true;
 audio.heartbeat.loop = true;
 
-audio.music.volume = .25;
+audio.music.volume = 1.0;
 audio.ambience.volume = .20;
-audio.tick.volume = .14;
+audio.tick.volume = .28;
 audio.heartbeat.volume = .18;
 audio.lights.volume = .35;
 audio.scream.volume = .78;
@@ -639,41 +627,28 @@ function showText(text, duration){
 }
 
 /* Slow cinematic image transition */
-async function changeScene(src, label, push=true){
+async function changeScene(src, label){
+    // Smooth, quick cinematic crossfade: old image fades out
+    // while the new image fades in. No zoom or scaling.
+    const current = document.querySelector(".scene img.active");
+    const next = current === sceneImageA ? sceneImageB : sceneImageA;
 
-    sceneImage.classList.remove("active");
-
-    await wait(900);
-
-    sceneImage.src = src;
+    next.src = src;
+    next.classList.add("active");
+    current.classList.remove("active");
 
     await new Promise(resolve=>{
-        if(sceneImage.complete) resolve();
-        else sceneImage.onload = resolve;
+        if(next.complete) resolve();
+        else next.onload = resolve;
     });
-
-    sceneLabel.classList.remove("show");
-
-    await wait(250);
 
     sceneLabel.textContent = label;
-    sceneLabel.classList.add("show");
-
-    scene.classList.remove("slow-push");
-
-    /* allow browser to register new image before animation */
-    requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-            sceneImage.classList.add("active");
-
-            if(push){
-                scene.classList.add("slow-push");
-            }
-        });
+    sceneLabel.classList.remove("show");
+    requestAnimationFrame(() => {
+        sceneLabel.classList.add("show");
     });
 
-    /* Let the shot breathe */
-    await wait(2600);
+    await wait(650);
 }
 
 /* =========================================================
@@ -699,6 +674,24 @@ async function preloadImages(){
 /* =========================================================
    START
 ========================================================= */
+
+async function fadeOutSound(name, duration = 1500) {
+    const sound = audio[name];
+    if (!sound) return;
+
+    const startVolume = sound.volume;
+    const steps = 30;
+    const stepTime = duration / steps;
+
+    for (let i = 0; i < steps; i++) {
+        sound.volume = startVolume * (1 - (i + 1) / steps);
+        await wait(stepTime);
+    }
+
+    sound.pause();
+    sound.currentTime = 0;
+    sound.volume = startVolume;
+}
 
 async function startGame(){
 
@@ -760,7 +753,7 @@ async function startGame(){
         "THE CLOCK · 11:59 PM"
     );
 
-    stopSound("ambience");
+    await fadeOutSound("ambience", 2000);
     playSound("tick");
 
     showText(
@@ -806,38 +799,29 @@ async function startGame(){
         "THE BALLROOM · MOMENTS LATER"
     );
 
-    scene.classList.add("flicker");
-    playSound("lights");
-
     showText(
         "Then the lights flickered.",
-        3200
+        2600
     );
 
-    await wait(3600);
+    // Three separate, deliberate chandelier flickers.
+    for(let i = 0; i < 3; i++){
+        scene.classList.add("flicker");
+        playSound("lights");
+        await wait(650);
+        scene.classList.remove("flicker");
 
-    showText(
-        "Once.",
-        1600
-    );
-
-    await wait(1900);
-
-    showText(
-        "Twice.",
-        1600
-    );
-
-    await wait(1900);
+        if(i < 2){
+            await wait(650);
+        }
+    }
 
     showText(
         "<span class='whisper'>And then...</span>",
-        2500
+        2000
     );
 
-    await wait(2700);
-
-    scene.classList.remove("flicker");
+    await wait(2000);
 
     /* =====================================================
        BLACKOUT
@@ -847,6 +831,8 @@ async function startGame(){
         images.dark,
         "BLACKOUT"
     );
+
+    await wait(1100);
 
     /* sudden blackout */
     blackout.classList.add("on");
@@ -863,7 +849,7 @@ async function startGame(){
 
     flash.classList.remove("on");
 
-    await wait(500);
+    // await wait(100);
 
     playSound("thud");
     playSound("heartbeat");
