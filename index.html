@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MYSTICAL — Midnight Scandal</title>
-
+<title> Midnight Scandal</title>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
     --gold:#d7b56d;
@@ -206,52 +206,105 @@ button{font:inherit}
 }
 
 /* =========================
-   TEXT
+   COMIC BOOK STORY TEXT
 ========================= */
 
 .story{
     position:absolute;
     left:50%;
-    bottom:11%;
-    transform:translateX(-50%);
-    width:min(900px,88%);
+    bottom:10%;
+    transform:translateX(-50%) translateY(12px);
+    width:min(920px,88%);
     z-index:70;
     text-align:center;
     opacity:0;
-    transition:opacity 1.1s ease;
+    transition:opacity .45s ease, transform .45s ease;
     pointer-events:none;
+    
 }
+
 
 .story.show{
     opacity:1;
-    transform:translateX(-50%);
+    transform:translateX(-50%) translateY(0);
 }
 
 .story p{
-    font-size:clamp(18px,2vw,27px);
-    line-height:1.6;
-    letter-spacing:.35px;
-    color:#f2ece0;
-    text-shadow:0 3px 16px #000,0 0 30px #000;
+    display:inline-block;
+    position:relative;
+    max-width:900px;
+    padding:18px 30px 20px;
+    font-family:'Comic Neue', sans-serif !important;
+    font-size:clamp(20px,2.25vw,31px);
+    font-weight:700;
+    line-height:1.35;
+    letter-spacing:.15px;
+    color:#17130e;
+    background:#f5edda;
+    border:3px solid #17130e;
+    border-radius:7px;
+    box-shadow:
+        6px 7px 0 rgba(0,0,0,.75),
+        0 10px 35px rgba(0,0,0,.45);
+    text-shadow:none;
 }
 
+/* Comic speech bubble tail */
+.story p::after{
+    content:"";
+    position:absolute;
+    bottom:-18px;
+    left:20%;
+    width:28px;
+    height:28px;
+    background:#f5edda;
+    border-right:3px solid #17130e;
+    border-bottom:3px solid #17130e;
+    transform:rotate(45deg);
+    z-index:-1;
+}
+
+/* All story text uses the same comic-book bubble */
 .story .whisper{
-    color:#c7bba8;
-    font-size:.72em;
-    letter-spacing:4px;
+    display:inline;
+    color:#17130e;
+    background:transparent;
+    border:0;
+    padding:0;
+    font-size:.78em;
+    font-weight:700;
+    letter-spacing:3px;
     text-transform:uppercase;
+    border-radius:0;
+    box-shadow:none;
 }
 
-/* blinking caret-like suspense */
+/* Comic accent */
 .story::after{
     content:"";
     display:block;
-    width:22px;
-    height:1px;
+    width:46px;
+    height:4px;
     background:var(--gold);
-    opacity:.7;
-    margin:14px auto 0;
-    animation:linePulse 1.8s ease-in-out infinite;
+    border:1px solid #17130e;
+    opacity:.9;
+    margin:18px auto 0;
+    transform:skewX(-20deg);
+}
+
+/* Slight comic-book entrance */
+@keyframes comicTextIn{
+    0%{
+        opacity:0;
+        transform:translateY(12px) scale(.96) rotate(-1deg);
+    }
+    70%{
+        transform:translateY(-2px) scale(1.015) rotate(.2deg);
+    }
+    100%{
+        opacity:1;
+        transform:translateY(0) scale(1) rotate(0);
+    }
 }
 
 @keyframes linePulse{
@@ -566,13 +619,15 @@ const audio = {
     scream: new Audio("soundsscream.mp3"),
     thud: new Audio("sounds/thud.mp3"),
     heartbeat: new Audio("sounds/heartbeat.mp3"),
-    clue: new Audio("sounds/clue_reveal.mp3")
+    clue: new Audio("sounds/clue_reveal.mp3"),
+    dukeReveal: new Audio("sounds/darksong.mp3"),
 };
 
 audio.music.loop = true;
 audio.ambience.loop = true;
 audio.tick.loop = true;
 audio.heartbeat.loop = true;
+audio.dukeReveal.loop = true;
 
 audio.music.volume = 1.0;
 audio.ambience.volume = .20;
@@ -583,6 +638,7 @@ audio.scream.volume = .78;
 audio.thud.volume = .68;
 audio.bell.volume = .62;
 audio.clue.volume = .5;
+audio.dukeReveal.volume = .55;
 
 /* =========================================================
    HELPERS
@@ -861,12 +917,12 @@ async function startGame(){
         3600
     );
 
-    await wait(4100);
+    // await wait(4100);
 
-    /* silence before reveal */
-    stopSound("heartbeat");
+    // /* silence before reveal */
+    // stopSound("heartbeat");
 
-    await wait(1200);
+    // await wait(1200);
 
     /* =====================================================
        DUKE REVEAL
@@ -875,11 +931,13 @@ async function startGame(){
     blackout.classList.remove("on");
 
     await wait(1200);
+    playSound("dukeReveal");
 
     await changeScene(
         images.duke,
         "THE BALLROOM · 12:01 AM"
     );
+    await wait(2200);
 
     showText(
         "No one spoke.",
@@ -887,6 +945,7 @@ async function startGame(){
     );
 
     await wait(3300);
+    
 
     showText(
         "The Duke was dead.",
