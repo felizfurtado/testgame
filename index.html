@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> Midnight Scandal</title>
+<title>MYSTICAL — Midnight Scandal</title>
 <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -472,6 +472,33 @@ button{font:inherit}
 }
 
 /* =========================
+   SKIP INTRO
+========================= */
+
+.skip-intro{
+    position:absolute;
+    right:25px;
+    top:25px;
+    z-index:95;
+    display:none;
+    padding:10px 18px;
+    border:1px solid rgba(215,181,109,.65);
+    background:rgba(0,0,0,.62);
+    color:var(--cream);
+    cursor:pointer;
+    font-size:11px;
+    letter-spacing:2px;
+    backdrop-filter:blur(8px);
+    transition:.3s ease;
+}
+
+.skip-intro:hover{
+    background:var(--gold);
+    color:#080706;
+    transform:translateY(-1px);
+}
+
+/* =========================
    REPLAY
 ========================= */
 
@@ -544,7 +571,7 @@ button{font:inherit}
     <div class="chapter-title" id="chapterTitle">
         <div>
             <small>CHAPTER ONE</small>
-            <h2>MIDNIGHT SCANDAL</h2>
+            <h2>THE SCANDAL</h2>
         </div>
     </div>
 
@@ -559,13 +586,14 @@ button{font:inherit}
         <button onclick="startInvestigation()">INVESTIGATE THE SCENE</button>
     </div>
 
+    <button class="skip-intro" id="skipIntro" onclick="skipIntro()">SKIP INTRO</button>
     <button class="replay" id="replay" onclick="location.reload()">REPLAY</button>
 
     <div class="start-screen" id="startScreen">
         <div class="start-content">
             <div class="brand">MYSTICAL</div>
             <h1>MIDNIGHT SCANDAL</h1>
-            <div class="chapter">CHAPTER ONE · THE BLACKOUT</div>
+            <div class="chapter">CHAPTER ONE · THE SCANDAL</div>
             <button class="enter" onclick="startGame()">ENTER THE BALLROOM</button>
         </div>
     </div>
@@ -584,7 +612,17 @@ const images = {
     flicker: "04_chandelier_flicker.png",
     dark: "05_dark_ballroom.png",
     duke: "06_duke_dead.png",
-    seal: "07_broken_seal.png"
+    seal: "07_broken_seal.png",
+
+    // Chapter One additions
+    study: "08_duke_study.png",
+    studyDesk: "09_study_desk_investigation.png",
+    diary: "10_dukes_diary.png",
+    diaryOpen: "11_diary_open.png",
+    diaryDiscovery: "12_diary_discovery.png",
+    characters: "13_ballroom_characters.png",
+    gossip: "14_gossip_tension.png",
+    cliffhanger: "15_chapter1_cliffhanger.png"
 };
 
 /* =========================================================
@@ -605,6 +643,10 @@ const flash = document.getElementById("flash");
 const sceneLabel = document.getElementById("sceneLabel");
 const investigate = document.getElementById("investigate");
 const replay = document.getElementById("replay");
+const skipIntroButton = document.getElementById("skipIntro");
+
+let introSkipped = false;
+let introRunId = 0;
 
 /* =========================================================
    AUDIO
@@ -616,7 +658,7 @@ const audio = {
     tick: new Audio("sounds/clock-tick-tock.wav"),
     bell: new Audio("sounds/bell.wav"),
     lights: new Audio("sounds/light_flicker.mp3"),
-    scream: new Audio("soundsscream.mp3"),
+    scream: new Audio("sounds/scream.mp3"),
     thud: new Audio("sounds/thud.mp3"),
     heartbeat: new Audio("sounds/heartbeat.mp3"),
     clue: new Audio("sounds/clue_reveal.mp3"),
@@ -749,7 +791,293 @@ async function fadeOutSound(name, duration = 1500) {
     sound.volume = startVolume;
 }
 
+function skipIntro(){
+    if (introSkipped) return;
+
+    introSkipped = true;
+    introRunId++;
+
+    // Stop the opening cinematic audio.
+    stopSound("tick");
+    stopSound("ambience");
+    stopSound("bell");
+    stopSound("lights");
+
+    // Reset visual effects from the opening sequence.
+    blackout.classList.remove("on");
+    flash.classList.remove("on");
+    scene.classList.remove("flicker");
+    game.classList.remove("shake");
+    chapterTitle.classList.remove("show");
+    story.classList.remove("show");
+
+    // Jump directly to the ballroom before the countdown.
+    const current = document.querySelector(".scene img.active");
+    const next = current === sceneImageA ? sceneImageB : sceneImageA;
+    next.src = images.ballroom;
+    next.classList.add("active");
+    current.classList.remove("active");
+
+    sceneLabel.textContent = "THE DUKE'S BALLROOM · 11:58 PM";
+    sceneLabel.classList.add("show");
+
+    showText(
+        "The ball is already underway. You arrive just before midnight.",
+        3600
+    );
+
+    // Keep the skip control hidden after skipping.
+    skipIntroButton.style.display = "none";
+
+    // Resume from the character/social section rather than replaying the opening.
+    setTimeout(async () => {
+        if (!introSkipped) return;
+
+        showText(
+            "Among the guests were Prince Alden Marrow, Princess Ellara Marrow, Lady Evelyn Rosmere, and Miss Mabel Quill.",
+            5200
+        );
+
+        await wait(5800);
+
+        showText(
+            "Your attention lingers on the Prince.",
+            3600
+        );
+
+        await wait(4200);
+
+        showText(
+            "<span class='whisper'>But beneath the music, something feels wrong.</span>",
+            3200
+        );
+
+        await wait(3800);
+
+        await changeScene(
+            images.gossip,
+            "THE BALLROOM · WHISPERS"
+        );
+
+        showText(
+            "Quiet conversations ripple through the room. Names are whispered. Secrets are traded.",
+            4700
+        );
+
+        await wait(5300);
+
+        showText(
+            "Lady Evelyn watches the Prince. Mabel speaks hurriedly to another guest. The Duke seems unusually tense.",
+            5000
+        );
+
+        await wait(5600);
+
+        showText(
+            "<span class='whisper'>Everyone has something to hide.</span>",
+            3300
+        );
+
+        await wait(3900);
+
+        continueToCountdown();
+    }, 3800);
+}
+
+async function continueToCountdown(){
+    if (!introSkipped) return;
+
+    /* =====================================================
+       11:59
+    ===================================================== */
+
+    await changeScene(
+        images.clock1159,
+        "THE CLOCK · 11:59 PM"
+    );
+
+    playSound("tick");
+
+    showText(
+        "11:59 PM.",
+        2500
+    );
+
+    await wait(3200);
+
+    showText(
+        "<span class='whisper'>One minute until midnight.</span>",
+        3200
+    );
+
+    await wait(4000);
+
+    /* =====================================================
+       MIDNIGHT
+    ===================================================== */
+
+    stopSound("tick");
+
+    await changeScene(
+        images.clock1200,
+        "MIDNIGHT"
+    );
+
+    playSound("bell");
+
+    showText(
+        "<span class='whisper'>MIDNIGHT.</span>",
+        3000
+    );
+
+    await wait(3900);
+
+    /* =====================================================
+       CHANDELIER
+    ===================================================== */
+
+    await changeScene(
+        images.flicker,
+        "THE BALLROOM · MOMENTS LATER"
+    );
+
+    showText(
+        "Then the lights flickered.",
+        2600
+    );
+
+    for(let i = 0; i < 3; i++){
+        scene.classList.add("flicker");
+        playSound("lights");
+        await wait(650);
+        scene.classList.remove("flicker");
+
+        if(i < 2){
+            await wait(650);
+        }
+    }
+
+    showText(
+        "<span class='whisper'>And then...</span>",
+        2000
+    );
+
+    await wait(2000);
+
+    /* =====================================================
+       BLACKOUT
+    ===================================================== */
+
+    await changeScene(
+        images.dark,
+        "BLACKOUT"
+    );
+
+    await wait(1100);
+
+    blackout.classList.add("on");
+
+    await wait(1100);
+
+    playSound("scream");
+
+    await wait(1200);
+
+    flash.classList.add("on");
+
+    await wait(350);
+
+    flash.classList.remove("on");
+
+    playSound("thud");
+    playSound("heartbeat");
+
+    game.classList.add("shake");
+
+    showText(
+        "<span class='whisper'>A scream cuts through the darkness.</span>",
+        3600
+    );
+
+    await wait(3600);
+
+    blackout.classList.remove("on");
+
+    await wait(1200);
+    playSound("dukeReveal");
+
+    await changeScene(
+        images.duke,
+        "THE BALLROOM · 12:01 AM"
+    );
+
+    await wait(2200);
+
+    showText(
+        "No one spoke.",
+        2500
+    );
+
+    await wait(3300);
+
+    showText(
+        "The Duke was dead.",
+        4200
+    );
+
+    await wait(5000);
+
+    showText(
+        "Everyone claimed they had been in the ballroom.",
+        3600
+    );
+
+    await wait(4300);
+
+    showText(
+        "<span class='whisper'>But someone was lying.</span>",
+        3500
+    );
+
+    await wait(4200);
+
+    await changeScene(
+        images.seal,
+        "FIRST CLUE"
+    );
+
+    playSound("clue");
+
+    showText(
+        "Something catches your eye on the floor.",
+        3300
+    );
+
+    await wait(3900);
+
+    showText(
+        "A broken royal seal.",
+        3500
+    );
+
+    await wait(4200);
+
+    showText(
+        "<span class='whisper'>The investigation begins.</span>",
+        3500
+    );
+
+    await wait(4000);
+
+    investigate.classList.add("show");
+    replay.style.display = "block";
+    skipIntroButton.style.display = "none";
+}
+
 async function startGame(){
+
+    introSkipped = false;
+    skipIntroButton.style.display = "block";
 
     startScreen.style.opacity = "0";
 
@@ -800,7 +1128,70 @@ async function startGame(){
 
     await wait(3500);
 
+    // The opening cinematic is complete; keep skip available only during the intro.
+    skipIntroButton.style.display = "none";
+
     /* =====================================================
+       THE TON · CHARACTER INTRODUCTIONS
+    ===================================================== */
+
+    await changeScene(
+        images.characters,
+        "THE DUKE'S BALL · THE TON"
+    );
+
+    showText(
+        "Among the guests were Prince Alden Marrow, Princess Ellara Marrow, Lady Evelyn Rosmere, and Miss Mabel Quill.",
+        5200
+    );
+
+    await wait(5800);
+
+    showText(
+        "Your attention lingers on the Prince.",
+        3600
+    );
+
+    await wait(4200);
+
+    showText(
+        "<span class='whisper'>But beneath the music, something feels wrong.</span>",
+        3200
+    );
+
+    await wait(3800);
+
+    /* =====================================================
+       GOSSIP & TENSION
+    ===================================================== */
+
+    await changeScene(
+        images.gossip,
+        "THE BALLROOM · WHISPERS"
+    );
+
+    showText(
+        "Quiet conversations ripple through the room. Names are whispered. Secrets are traded.",
+        4700
+    );
+
+    await wait(5300);
+
+    showText(
+        "Lady Evelyn watches the Prince. Mabel speaks hurriedly to another guest. The Duke seems unusually tense.",
+        5000
+    );
+
+    await wait(5600);
+
+    showText(
+        "<span class='whisper'>Everyone has something to hide.</span>",
+        3300
+    );
+
+    await wait(3900);
+
+        /* =====================================================
        11:59
     ===================================================== */
 
@@ -1008,9 +1399,14 @@ async function startGame(){
    INVESTIGATION BUTTON
 ========================================================= */
 
-function startInvestigation(){
+async function startInvestigation(){
 
     investigate.classList.remove("show");
+    replay.style.display = "none";
+
+    /* =====================================================
+       CLUE 1 · BROKEN ROYAL SEAL
+    ===================================================== */
 
     playSound("clue");
 
@@ -1018,6 +1414,178 @@ function startInvestigation(){
         "<span class='whisper'>CLUE FOUND</span><br><br>The royal seal has been deliberately broken.",
         5000
     );
+
+    await wait(5700);
+
+    showText(
+        "The broken wax is fresh. Whatever happened tonight was not an accident.",
+        4300
+    );
+
+    await wait(5000);
+
+    /* =====================================================
+       THE DUKE'S STUDY
+    ===================================================== */
+
+    await changeScene(
+        images.study,
+        "THE DUKE'S STUDY"
+    );
+
+    showText(
+        "The Duke's study is untouched—or so it seems.",
+        3800
+    );
+
+    await wait(4400);
+
+    showText(
+        "You begin searching the room for anything that might explain why he was killed.",
+        4300
+    );
+
+    await wait(4900);
+
+    /* =====================================================
+       SEARCH THE DESK
+    ===================================================== */
+
+    await changeScene(
+        images.studyDesk,
+        "THE DUKE'S STUDY · DESK"
+    );
+
+    showText(
+        "Letters. Sealed envelopes. Old accounts. Nothing unusual at first.",
+        4200
+    );
+
+    await wait(4800);
+
+    showText(
+        "Then you notice an open drawer.",
+        3000
+    );
+
+    await wait(3600);
+
+    showText(
+        "<span class='whisper'>Something has been hidden here.</span>",
+        3000
+    );
+
+    await wait(3600);
+
+    /* =====================================================
+       DIARY REVEAL
+    ===================================================== */
+
+    await changeScene(
+        images.diary,
+        "THE DUKE'S STUDY · HIDDEN DRAWER"
+    );
+
+    playSound("clue");
+
+    showText(
+        "Inside is a leather-bound diary bearing the Duke's royal crest.",
+        4700
+    );
+
+    await wait(5300);
+
+    showText(
+        "It is locked with secrets rather than a key.",
+        3000
+    );
+
+    await wait(3600);
+
+    /* =====================================================
+       OPEN DIARY
+    ===================================================== */
+
+    await changeScene(
+        images.diaryOpen,
+        "THE DUKE'S PRIVATE DIARY"
+    );
+
+    showText(
+        "You open it.",
+        2400
+    );
+
+    await wait(3000);
+
+    showText(
+        "The pages contain names, appointments, warnings—and meetings that were never meant to be known.",
+        5000
+    );
+
+    await wait(5600);
+
+    /* =====================================================
+       DIARY DISCOVERY
+    ===================================================== */
+
+    await changeScene(
+        images.diaryDiscovery,
+        "THE DUKE'S SECRET MEETINGS"
+    );
+
+    showText(
+        "Lady Evelyn Rosmere. Prince Alden Marrow. Princess Ellara Marrow. Mabel Quill.",
+        5200
+    );
+
+    await wait(5800);
+
+    showText(
+        "Each name is connected to a private meeting with the Duke.",
+        4000
+    );
+
+    await wait(4600);
+
+    showText(
+        "<span class='whisper'>These were not ordinary conversations.</span>",
+        3400
+    );
+
+    await wait(4000);
+
+    /* =====================================================
+       CHAPTER ONE CLIFFHANGER
+    ===================================================== */
+
+    await changeScene(
+        images.cliffhanger,
+        "CHAPTER ONE · THE FINAL DISCOVERY"
+    );
+
+    showText(
+        "The last page stops you cold.",
+        3000
+    );
+
+    await wait(3600);
+
+    showText(
+        "Everyone at the ball had a reason to meet the Duke. Now you know where to begin.",
+        4700
+    );
+
+    await wait(5300);
+
+    showText(
+        "<span class='whisper'>CHAPTER ONE COMPLETE</span><br><br>The scandal has only just begun.",
+        5200
+    );
+
+    await wait(6000);
+
+    replay.style.display = "block";
 }
 
 /* =========================================================
